@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Login - EcoTech{% endblock %}
+{% block content %}
+<div class="row g-0 rounded-4 overflow-hidden shadow" style="min-height: 520px;">
+  <div class="col-md-6 d-none d-md-block" style="background: url('https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;">
+    <div class="h-100 d-flex align-items-end p-4" style="background: linear-gradient(to top, rgba(47,125,109,.75), transparent);">
+      <div class="text-white">
+        <h3 class="fw-bold">Bienestar y sostenibilidad</h3>
+        <p class="mb-0">Gestiona personas y proyectos con calma y claridad.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 bg-white d-flex align-items-center">
+    <div class="w-100 p-5">
+      <div class="text-center mb-4">
+        <i class="bi bi-leaf-fill text-success" style="font-size:2.5rem;"></i>
+        <h3 class="mt-2">Acceso Seguro</h3>
+        <p class="text-muted small">Ingresa tus credenciales para continuar</p>
+      </div>
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Usuario</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input type="text" name="username" class="form-control" required autofocus>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contraseña</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-box-arrow-in-right me-1"></i> Ingresar</button>
+      </form>
+      <p class="text-muted mt-3 small text-center">Usuario inicial: <code>admin</code> / <code>Admin123!</code></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

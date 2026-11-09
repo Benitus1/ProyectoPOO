@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - EcoTech{% endblock %}
+{% block content %}
+<div class="hero mb-4" style="background-image: url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80');">
+  <div class="hero-content">
+    <h1>Panel Principal</h1>
+    <p class="mb-3">Gestiona personas, proyectos y bienestar con serenidad.</p>
+    <a href="{{ url_for('servicios') }}" class="btn btn-light btn-sm"><i class="bi bi-cloud-sun me-1"></i> Ver clima e indicadores</a>
+  </div>
+</div>
+
+<div class="row g-3" id="moduleGrid">
+  <div class="col-md-3 col-6" data-module="empleados">
+    <div class="card quick-card"><i class="bi bi-people-fill"></i><h5>Empleados</h5><p class="text-muted small mb-2">Gestión de personas</p><a href="{{ url_for('empleados') }}" class="btn btn-outline-success btn-sm">Abrir</a></div>
+  </div>
+  <div class="col-md-3 col-6" data-module="departamentos">
+    <div class="card quick-card"><i class="bi bi-building"></i><h5>Departamentos</h5><p class="text-muted small mb-2">Estructura organizacional</p><a href="{{ url_for('departamentos') }}" class="btn btn-outline-success btn-sm">Abrir</a></div>
+  </div>
+  <div class="col-md-3 col-6" data-module="proyectos">
+    <div class="card quick-card"><i class="bi bi-kanban-fill"></i><h5>Proyectos</h5><p class="text-muted small mb-2">Iniciativas activas</p><a href="{{ url_for('proyectos') }}" class="btn btn-outline-success btn-sm">Abrir</a></div>
+  </div>
+  <div class="col-md-3 col-6" data-module="registros">
+    <div class="card quick-card"><i class="bi bi-clock-history"></i><h5>Registros</h5><p class="text-muted small mb-2">Bitácora de horas</p><a href="{{ url_for('registros') }}" class="btn btn-outline-success btn-sm">Abrir</a></div>
+  </div>
+  <div class="col-md-3 col-6" data-module="asignaciones">
+    <div class="card quick-card"><i class="bi bi-diagram-3-fill"></i><h5>Asignaciones</h5><p class="text-muted small mb-2">Equipos por proyecto</p><a href="{{ url_for('asignaciones') }}" class="btn btn-outline-success btn-sm">Abrir</a></div>
+  </div>
+  <div class="col-md-3 col-6" data-module="tablero">
+    <div class="card quick-card"><i class="bi bi-hand-index-thumb-fill"></i><h5>Tablero</h5><p class="text-muted small mb-2">Drag &amp; Drop</p><a href="{{ url_for('tablero') }}" class="btn btn-outline-success btn-sm">Abrir</a></div>
+  </div>
+  <div class="col-md-3 col-6" data-module="servicios">
+    <div class="card quick-card"><i class="bi bi-cloud-sun-fill"></i><h5>Servicios API</h5><p class="text-muted small mb-2">Clima e indicadores</p><a href="{{ url_for('servicios') }}" class="btn btn-outline-success btn-sm">Abrir</a></div>
+  </div>
+  {% if current_user and current_user.rol == 'Administrador' %}
+  <div class="col-md-3 col-6" data-module="usuarios">
+    <div class="card quick-card"><i class="bi bi-shield-lock-fill"></i><h5>Usuarios</h5><p class="text-muted small mb-2">Seguridad y accesos</p><a href="{{ url_for('usuarios') }}" class="btn btn-outline-success btn-sm">Abrir</a></div>
+  </div>
+  {% endif %}
+</div>
+
+{% if current_user and current_user.rol == 'Administrador' %}
+<div class="mt-4 card">
+  <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h5 class="mb-0">Zona de administración</h5>
+      <small class="text-muted">Restaurar la base de datos a su estado inicial</small>
+    </div>
+    <form method="post" action="{{ url_for('reset') }}" onsubmit="return confirm('¿Restaurar base de datos a estado base?');">
+      <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-arrow-counterclockwise me-1"></i> Restaurar BD</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+(function(){
+  const saved = localStorage.getItem('et_module_order');
+  if (!saved) return;
+  try {
+    const order = JSON.parse(saved);
+    const grid = document.getElementById('moduleGrid');
+    const items = [...grid.children];
+    order.forEach(mod => {
+      const el = items.find(i => i.dataset.module === mod);
+      if (el) grid.appendChild(el);
+    });
+  } catch(e) {}
+})();
+</script>
+{% endblock %}

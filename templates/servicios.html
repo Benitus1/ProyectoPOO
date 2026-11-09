@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Servicios API - EcoTech{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <h2 class="mb-0"><i class="bi bi-cloud-sun-fill text-success me-2"></i>Servicios Externos (API)</h2>
+  <p class="text-muted mb-0">Clima, indicadores económicos y conversión de moneda</p>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5><i class="bi bi-cloud-sun me-2 text-success"></i>Clima por ciudad</h5>
+        <form method="post" class="mt-3">
+          <input type="hidden" name="action" value="clima">
+          <div class="input-group mb-2">
+            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+            <input name="ciudad" class="form-control" list="ciudadesSugeridas" placeholder="Ej: Santiago" required>
+            <datalist id="ciudadesSugeridas">
+              <option value="Santiago"><option value="Valparaíso"><option value="Concepción">
+              <option value="La Serena"><option value="Antofagasta"><option value="Temuco">
+              <option value="Puerto Montt"><option value="Iquique"><option value="Rancagua">
+              <option value="Talca"><option value="Arica"><option value="Copiapó">
+              <option value="Buenos Aires"><option value="Lima"><option value="Bogotá">
+              <option value="Madrid"><option value="Barcelona"><option value="Ciudad de México">
+            </datalist>
+          </div>
+          <button class="btn btn-success btn-sm w-100"><i class="bi bi-search me-1"></i> Consultar</button>
+        </form>
+        {% if clima %}
+        <hr>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <i class="bi bi-cloud-check text-success" style="font-size:1.5rem;"></i>
+          <div>
+            <strong>{{ clima.ciudad }}</strong> <span class="text-muted">({{ clima.pais }})</span><br>
+            <small class="text-muted">{{ clima.fuente }}</small>
+          </div>
+        </div>
+        <div class="row text-center g-2">
+          <div class="col-4"><div class="p-2 rounded" style="background:var(--et-primary-soft)"><div class="fw-bold">{{ clima.temperatura }}</div><small>°C</small></div></div>
+          <div class="col-4"><div class="p-2 rounded" style="background:var(--et-primary-soft)"><div class="fw-bold">{{ clima.humedad if clima.humedad is not none else '—' }}</div><small>% hum.</small></div></div>
+          <div class="col-4"><div class="p-2 rounded" style="background:var(--et-primary-soft)"><div class="fw-bold">{{ clima.viento }}</div><small>m/s</small></div></div>
+        </div>
+        {% if clima.sensacion is not none %}<p class="mt-2 mb-1 small"><strong>Sensación:</strong> {{ clima.sensacion }} °C</p>{% endif %}
+        <p class="mb-0 small"><strong>Descripción:</strong> {{ clima.descripcion }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5><i class="bi bi-graph-up-arrow me-2 text-success"></i>Indicadores económicos</h5>
+        <form method="post" class="mt-3">
+          <input type="hidden" name="action" value="indicadores">
+          <div class="mb-2">
+            <select name="codigo" class="form-select">
+              <option value="">Todos los indicadores</option>
+              <option value="dolar">Dólar (CLP)</option>
+              <option value="euro">Euro (CLP)</option>
+              <option value="uf">Unidad de Fomento (CLP)</option>
+              <option value="utm">UTM (CLP)</option>
+              <option value="bitcoin">Bitcoin (CLP)</option>
+            </select>
+          </div>
+          <button class="btn btn-success btn-sm w-100"><i class="bi bi-search me-1"></i> Consultar</button>
+        </form>
+        {% if indicadores %}
+        <hr>
+        {% if indicadores.get('_detalle') %}
+          {% set d = indicadores['_detalle'] %}
+          <div class="text-center">
+            <div class="display-6 fw-bold text-success">{{ d.valor }}</div>
+            <div class="text-muted">{{ d.nombre }}</div>
+            <small class="text-muted">{{ d.fecha }}</small>
+          </div>
+        {% else %}
+          {% for codigo, info in indicadores.items() %}
+          <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+            <span>{{ info.nombre }} <small class="text-muted">({{ codigo }})</small></span>
+            <strong>{{ info.valor }}</strong>
+          </div>
+          {% endfor %}
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5><i class="bi bi-currency-exchange me-2 text-success"></i>Conversión de moneda</h5>
+        <form method="post" class="mt-3">
+          <input type="hidden" name="action" value="convertir">
+          <div class="mb-2">
+            <label class="form-label small">Monto</label>
+            <input name="monto" type="number" step="0.01" class="form-control" required>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label small">Origen</label>
+              <select name="origen" class="form-select" required>
+               <option value="CLP">CLP</option>
+               <option value="USD">USD</option>
+               <option value="EUR">EUR</option>
+             </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Destino</label>
+              <select name="destino" class="form-select" required>
+               <option value="CLP">CLP</option>
+               <option value="USD">USD</option>
+               <option value="EUR">EUR</option>
+             </select>
+            </div>
+          </div>
+          <button class="btn btn-success btn-sm w-100"><i class="bi bi-arrow-left-right me-1"></i> Convertir</button>
+        </form>
+        {% if conversion %}
+        <hr>
+        {% set monto, origen, resultado, destino, info = conversion %}
+        <div class="text-center">
+          <div class="h4 mb-0">{{ monto }} {{ origen }}</div>
+          <i class="bi bi-arrow-down text-success"></i>
+          <div class="display-6 fw-bold text-success">{{ resultado }} {{ destino }}</div>
+          <small class="text-muted">{{ info.nombre }} = {{ info.valor }} ({{ info.fecha }})</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

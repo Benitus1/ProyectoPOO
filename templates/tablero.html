@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Tablero Drag & Drop - EcoTech{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <h2 class="mb-0"><i class="bi bi-hand-index-thumb-fill text-success me-2"></i>Tablero Drag &amp; Drop</h2>
+  <p class="text-muted mb-0">Arrastra para asignar empleados a departamentos o proyectos</p>
+</div>
+
+<h5 class="mt-2"><i class="bi bi-building me-2"></i>Departamentos</h5>
+<div class="d-flex gap-3 flex-wrap mb-4" id="deptBoard">
+  <div class="kanban-col" data-depto="">
+    <div class="kanban-header bg-secondary text-white">Sin departamento</div>
+    <div class="kanban-body" data-depto="">
+      {% for e in grupos[None] %}
+      <div class="emp-card" draggable="true" data-id="{{ e.id_empleado }}" data-nombre="{{ e.nombre }}" data-rol="{{ e.rol }}" data-email="{{ e.email }}">
+        <strong>{{ e.nombre }}</strong><br><small>{{ e.rol }} · {{ e.email }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% for d in departamentos %}
+  <div class="kanban-col" data-depto="{{ d.id_departamento }}">
+    <div class="kanban-header bg-success text-white">{{ d.nombre }}</div>
+    <div class="kanban-body" data-depto="{{ d.id_departamento }}">
+      {% for e in grupos.get(d.id_departamento, []) %}
+      <div class="emp-card" draggable="true" data-id="{{ e.id_empleado }}" data-nombre="{{ e.nombre }}" data-rol="{{ e.rol }}" data-email="{{ e.email }}">
+        <strong>{{ e.nombre }}</strong><br><small>{{ e.rol }} · {{ e.email }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<h5 class="mt-2"><i class="bi bi-kanban me-2"></i>Proyectos</h5>
+<p class="text-muted small">Arrastra un empleado desde "Disponibles" a un proyecto. Arrastra una tarjeta asignada a la zona "Quitar" para desasignar.</p>
+<div class="d-flex gap-3 flex-wrap align-items-start" id="projBoard">
+  <div class="kanban-col" style="width:260px;">
+    <div class="kanban-header bg-secondary text-white">Disponibles (todos)</div>
+    <div class="kanban-body" data-zone="source">
+      {% for e in empleados %}
+      <div class="emp-card" draggable="true" data-emp="{{ e.id_empleado }}" data-nombre="{{ e.nombre }}" data-rol="{{ e.rol }}" data-email="{{ e.email }}">
+        <strong>{{ e.nombre }}</strong><br><small>{{ e.rol }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% for p in proyectos %}
+  <div class="kanban-col" data-proy="{{ p.id_proyecto }}">
+    <div class="kanban-header bg-success text-white">{{ p.nombre }}</div>
+    <div class="kanban-body" data-proy="{{ p.id_proyecto }}">
+      {% for emp, fec in equipos_proj[p.id_proyecto] %}
+      <div class="emp-card" draggable="true" data-emp="{{ emp.id_empleado }}" data-proy="{{ p.id_proyecto }}" data-nombre="{{ emp.nombre }}">
+        <strong>{{ emp.nombre }}</strong><br><small>{{ fec }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <div class="kanban-col" style="width:160px;">
+    <div class="kanban-header bg-danger text-white">Quitar</div>
+    <div class="kanban-body" data-zone="trash" style="display:flex;align-items:center;justify-content:center;color:#999;">
+      <i class="bi bi-trash" style="font-size:2rem;"></i>
+    </div>
+  </div>
+</div>
+
+<style>
+.kanban-col { width: 280px; background: var(--et-surface); border-radius: var(--et-radius); box-shadow: var(--et-shadow); display: flex; flex-direction: column; }
+.kanban-header { padding: 12px 14px; border-radius: var(--et-radius) var(--et-radius) 0 0; font-weight: 600; }
+.kanban-body { padding: 10px; min-height: 120px; flex: 1; }
+.emp-card { background: var(--et-primary-soft); border: 1px solid var(--et-border); border-radius: 10px; padding: 10px; margin-bottom: 8px; cursor: grab; transition: transform .15s, box-shadow .15s; }
+.emp-card:hover { transform: translateY(-2px); box-shadow: var(--et-shadow); }
+.emp-card.dragging { opacity: .5; }
+.kanban-body.drag-over { background: #eaf5f1; outline: 2px dashed var(--et-primary); }
+</style>
+
+<script>
+(function(){
+  // Departamentos board
+  let dragged = null;
+  document.querySelectorAll('#deptBoard .emp-card').forEach(card => {
+    card.addEventListener('dragstart', e => { dragged = card; card.classList.add('dragging'); e.dataTransfer.setData('text/plain', card.dataset.id); });
+    card.addEventListener('dragend', () => { card.classList.remove('dragging'); dragged = null; document.querySelectorAll('#deptBoard .kanban-body').forEach(b=>b.classList.remove('drag-over')); });
+  });
+  document.querySelectorAll('#deptBoard .kanban-body').forEach(body => {
+    body.addEventListener('dragover', e => { e.preventDefault(); body.classList.add('drag-over'); });
+    body.addEventListener('dragleave', () => body.classList.remove('drag-over'));
+    body.addEventListener('drop', async e => {
+      e.preventDefault(); body.classList.remove('drag-over');
+      if (!dragged) return;
+      const empId = dragged.dataset.id;
+      const deptoId = body.dataset.depto;
+      body.appendChild(dragged);
+      try {
+        const res = await fetch('/api/asignar-departamento', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({empleado_id: empId, departamento_id: deptoId === '' ? null : deptoId})});
+        const data = await res.json();
+        if (!data.ok) { alert('No se pudo guardar: ' + (data.msg||'')); location.reload(); }
+      } catch(err){ alert('Error de red'); location.reload(); }
+    });
+  });
+
+  // Proyectos board
+  let draggedP = null;
+  document.querySelectorAll('#projBoard .emp-card').forEach(card => {
+    card.addEventListener('dragstart', e => { draggedP = card; card.classList.add('dragging'); e.dataTransfer.setData('text/plain', card.dataset.emp); });
+    card.addEventListener('dragend', () => { card.classList.remove('dragging'); draggedP = null; document.querySelectorAll('#projBoard .kanban-body').forEach(b=>b.classList.remove('drag-over')); });
+  });
+  document.querySelectorAll('#projBoard .kanban-body').forEach(body => {
+    body.addEventListener('dragover', e => { e.preventDefault(); body.classList.add('drag-over'); });
+    body.addEventListener('dragleave', () => body.classList.remove('drag-over'));
+    body.addEventListener('drop', async e => {
+      e.preventDefault(); body.classList.remove('drag-over');
+      if (!draggedP) return;
+      const empId = draggedP.dataset.emp;
+      const zone = body.dataset.zone;
+      const proyId = body.dataset.proy;
+      if (zone === 'source') return; // no-op
+      if (zone === 'trash') {
+        // need proyecto id from card
+        const pId = draggedP.dataset.proy;
+        if (!pId) { alert('Esta tarjeta no está asignada a un proyecto'); return; }
+        try {
+          const res = await fetch('/api/desasignar-proyecto', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({empleado_id: empId, proyecto_id: pId})});
+          const data = await res.json();
+          if (data.ok) draggedP.remove(); else { alert('No se pudo quitar: '+(data.msg||'')); location.reload(); }
+        } catch(err){ alert('Error de red'); location.reload(); }
+        return;
+      }
+      // assign to project
+      if (!proyId) return;
+      try {
+        const res = await fetch('/api/asignar-proyecto', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({empleado_id: empId, proyecto_id: proyId})});
+        const data = await res.json();
+        if (data.ok) {
+          // add a card to project column
+          const card = document.createElement('div');
+          card.className = 'emp-card';
+          card.draggable = true;
+          card.dataset.emp = empId;
+          card.dataset.proy = proyId;
+          card.dataset.nombre = draggedP.dataset.nombre || '';
+          card.innerHTML = '<strong>' + (draggedP.dataset.nombre||'Empleado') + '</strong><br><small>asignado</small>';
+          body.appendChild(card);
+          // attach handlers
+          card.addEventListener('dragstart', ev => { draggedP = card; card.classList.add('dragging'); ev.dataTransfer.setData('text/plain', card.dataset.emp); });
+          card.addEventListener('dragend', () => { card.classList.remove('dragging'); draggedP = null; });
+        } else {
+          alert('No se pudo asignar: ' + (data.msg||''));
+        }
+      } catch(err){ alert('Error de red'); location.reload(); }
+    });
+  });
+})();
+</script>
+{% endblock %}

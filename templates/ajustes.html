@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Ajustes - EcoTech{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <h2 class="mb-0"><i class="bi bi-sliders text-success me-2"></i>Ajustes</h2>
+  <p class="text-muted mb-0">Personaliza la experiencia y el orden de los módulos</p>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5><i class="bi bi-palette me-2 text-success"></i>Tema visual</h5>
+        <p class="text-muted small">Elige una paleta que te transmita calma.</p>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-outline-success theme-btn" data-theme="theme-calm">Calma (verde)</button>
+          <button class="btn btn-outline-success theme-btn" data-theme="theme-ocean">Océano (azul)</button>
+          <button class="btn btn-outline-success theme-btn" data-theme="theme-forest">Bosque (verde oscuro)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5><i class="bi bi-arrows-move me-2 text-success"></i>Orden de módulos</h5>
+        <p class="text-muted small">Arrastra para reordenar el dashboard.</p>
+        <ul id="moduleList" class="sortable-list">
+          <li class="sortable-item" draggable="true" data-module="empleados"><i class="bi bi-grip-vertical sortable-handle"></i><i class="bi bi-people"></i> Empleados</li>
+          <li class="sortable-item" draggable="true" data-module="departamentos"><i class="bi bi-grip-vertical sortable-handle"></i><i class="bi bi-building"></i> Departamentos</li>
+          <li class="sortable-item" draggable="true" data-module="proyectos"><i class="bi bi-grip-vertical sortable-handle"></i><i class="bi bi-kanban"></i> Proyectos</li>
+          <li class="sortable-item" draggable="true" data-module="registros"><i class="bi bi-grip-vertical sortable-handle"></i><i class="bi bi-clock-history"></i> Registros</li>
+          <li class="sortable-item" draggable="true" data-module="asignaciones"><i class="bi bi-grip-vertical sortable-handle"></i><i class="bi bi-diagram-3"></i> Asignaciones</li>
+          <li class="sortable-item" draggable="true" data-module="tablero"><i class="bi bi-grip-vertical sortable-handle"></i><i class="bi bi-hand-index-thumb"></i> Tablero</li>
+          <li class="sortable-item" draggable="true" data-module="servicios"><i class="bi bi-grip-vertical sortable-handle"></i><i class="bi bi-cloud-sun"></i> Servicios API</li>
+          {% if current_user and current_user.rol == 'Administrador' %}
+          <li class="sortable-item" draggable="true" data-module="usuarios"><i class="bi bi-grip-vertical sortable-handle"></i><i class="bi bi-shield-lock"></i> Usuarios</li>
+          {% endif %}
+        </ul>
+        <div class="d-flex gap-2 mt-2">
+          <button id="saveOrder" class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i> Guardar orden</button>
+          <button id="resetOrder" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-counterclockwise me-1"></i> Restablecer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Theme
+  const savedTheme = localStorage.getItem('et_theme') || 'theme-calm';
+  document.body.classList.add(savedTheme);
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.body.classList.remove('theme-calm','theme-ocean','theme-forest');
+      const t = btn.dataset.theme;
+      document.body.classList.add(t);
+      localStorage.setItem('et_theme', t);
+    });
+  });
+
+  // Sortable
+  const list = document.getElementById('moduleList');
+  let dragged = null;
+  list.querySelectorAll('.sortable-item').forEach(item => {
+    item.addEventListener('dragstart', () => { dragged = item; item.classList.add('dragging'); });
+    item.addEventListener('dragend', () => { item.classList.remove('dragging'); dragged = null; });
+  });
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    const after = getDragAfterElement(list, e.clientY);
+    if (after == null) list.appendChild(dragged);
+    else list.insertBefore(dragged, after);
+  });
+  function getDragAfterElement(container, y) {
+    const els = [...container.querySelectorAll('.sortable-item:not(.dragging)')];
+    return els.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height/2;
+      if (offset < 0 && offset > closest.offset) return { offset, element: child };
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+  document.getElementById('saveOrder').addEventListener('click', () => {
+    const order = [...list.querySelectorAll('.sortable-item')].map(i => i.dataset.module);
+    localStorage.setItem('et_module_order', JSON.stringify(order));
+    alert('Orden guardado. Se aplicará en el dashboard.');
+  });
+  document.getElementById('resetOrder').addEventListener('click', () => {
+    localStorage.removeItem('et_module_order');
+    localStorage.removeItem('et_theme');
+    location.reload();
+  });
+})();
+</script>
+{% endblock %}

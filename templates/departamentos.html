@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Departamentos - EcoTech{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h2 class="mb-0"><i class="bi bi-building text-success me-2"></i>Departamentos</h2>
+    <p class="text-muted mb-0">Organiza la estructura de EcoTech</p>
+  </div>
+  {% if current_user and current_user.rol in ['Administrador','Gerente'] %}
+  <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAddDepartamento">
+    <i class="bi bi-plus-lg me-1"></i> Nuevo departamento
+  </button>
+  {% endif %}
+</div>
+
+{% if current_user and current_user.rol in ['Administrador','Gerente'] %}
+<div class="card mb-3">
+  <div class="card-body">
+    <h6 class="mb-2"><i class="bi bi-arrow-left-right me-1"></i>Asignar / Quitar empleado</h6>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <select id="selEmpDep" class="form-select">
+          <option value="">Empleado</option>
+          {% for e in empleados %}<option value="{{ e.id_empleado }}">{{ e.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <select id="selDepEmp" class="form-select">
+          <option value="">Departamento</option>
+          {% for d in departamentos %}<option value="{{ d.id_departamento }}">{{ d.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button class="btn btn-primary flex-fill" onclick="submitDepAction('assign')">Asignar</button>
+        <button class="btn btn-outline-danger flex-fill" onclick="submitDepAction('unassign')">Quitar</button>
+      </div>
+    </div>
+    <form id="formDepAction" method="post" class="d-none">
+      <input type="hidden" name="action" id="depAction">
+      <input type="hidden" name="id_empleado" id="depEmp">
+      <input type="hidden" name="id_departamento" id="depDep">
+    </form>
+  </div>
+</div>
+<script>
+function submitDepAction(action){
+  const emp = document.getElementById('selEmpDep').value;
+  const dep = document.getElementById('selDepEmp').value;
+  if(!emp){ alert('Selecciona un empleado'); return; }
+  if(action==='assign' && !dep){ alert('Selecciona un departamento'); return; }
+  document.getElementById('depAction').value = action;
+  document.getElementById('depEmp').value = emp;
+  document.getElementById('depDep').value = dep;
+  document.getElementById('formDepAction').submit();
+}
+</script>
+{% endif %}
+
+{% if departamentos %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Gerente</th><th class="text-end">Acciones</th></tr></thead>
+      <tbody>
+      {% for d in departamentos %}
+      <tr>
+        <td><span class="badge bg-light text-dark">#{{ d.id_departamento }}</span></td>
+        <td class="fw-semibold">{{ d.nombre }}</td>
+        <td>{{ d.descripcion }}</td>
+        <td>{% if d.nombre_gerente %}{{ d.nombre_gerente }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+        <td class="text-end">
+          {% if current_user and current_user.rol in ['Administrador','Gerente'] %}
+          <button class="btn btn-sm btn-outline-primary me-1"
+            data-bs-toggle="modal" data-bs-target="#modalEditDepartamento"
+            data-id="{{ d.id_departamento }}" data-nombre="{{ d.nombre }}" data-desc="{{ d.descripcion }}" data-gerente="{{ d.gerente_id or '' }}">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <form method="post" class="d-inline" onsubmit="return confirm('¿Eliminar departamento?');">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id_departamento" value="{{ d.id_departamento }}">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state card">
+  <i class="bi bi-building"></i>
+  <h5 class="mt-2">Sin departamentos</h5>
+  <p class="text-muted">Crea el primer departamento para organizar al equipo.</p>
+</div>
+{% endif %}
+
+{% if current_user and current_user.rol in ['Administrador','Gerente'] %}
+<div class="modal fade" id="modalAddDepartamento" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        <input type="hidden" name="action" value="add">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-building-add me-2"></i>Nuevo departamento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label">Nombre</label><input name="nombre" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label">Descripción</label><input name="descripcion" class="form-control"></div>
+          <div class="mb-3">
+            <label class="form-label">Gerente (opcional)</label>
+            <select name="gerente_id" class="form-select">
+              <option value="">Sin gerente</option>
+              {% for e in empleados %}<option value="{{ e.id_empleado }}">{{ e.nombre }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalEditDepartamento" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        <input type="hidden" name="action" value="update">
+        <input type="hidden" name="id_departamento" id="editDepId">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar departamento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label">Nombre</label><input name="nombre" id="editDepNombre" class="form-control"></div>
+          <div class="mb-3"><label class="form-label">Descripción</label><input name="descripcion" id="editDepDesc" class="form-control"></div>
+          <div class="mb-3">
+            <label class="form-label">Gerente</label>
+            <select name="gerente_id" id="editDepGerente" class="form-select">
+              <option value="">Sin gerente</option>
+              {% for e in empleados %}<option value="{{ e.id_empleado }}">{{ e.nombre }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Actualizar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('modalEditDepartamento').addEventListener('show.bs.modal', function (event) {
+  const btn = event.relatedTarget;
+  document.getElementById('editDepId').value = btn.getAttribute('data-id');
+  document.getElementById('editDepNombre').value = btn.getAttribute('data-nombre');
+  document.getElementById('editDepDesc').value = btn.getAttribute('data-desc');
+  document.getElementById('editDepGerente').value = btn.getAttribute('data-gerente');
+});
+</script>
+{% endif %}
+{% endblock %}
